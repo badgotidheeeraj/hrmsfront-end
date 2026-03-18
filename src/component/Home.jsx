@@ -418,7 +418,7 @@ function Home() {
   return (
     <div className="container py-4" id="home">
       <h1 className="text-center text-primary mb-4">
-        🚀 Employee Management Dashboard
+        Employee Management Dashboard
       </h1>
 
       <div className="card shadow mb-4" id="add-employee">
