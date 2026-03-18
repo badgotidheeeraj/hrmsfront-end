@@ -10,7 +10,10 @@ const Nav = () => {
           </a>
 
           <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-4">
-            <a className="text-white text-decoration-none fw-medium" href="#home">
+            <a
+              className="text-white text-decoration-none fw-medium"
+              href="#home"
+            >
               Home
             </a>
             <a
@@ -31,9 +34,9 @@ const Nav = () => {
             >
               Attendance
             </a>
-            <a className="btn btn-light text-primary fw-semibold" href="#add-employee">
+            {/* <a className="btn btn-light text-primary fw-semibold" href="#add-employee">
               New Employee
-            </a>
+            </a> */}
           </div>
         </div>
       </div>
