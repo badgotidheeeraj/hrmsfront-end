@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const API_BASE_URL = "https://hrmsbackend-ij0q.onrender.com/api";
+
 const EMPLOYEE_API_URL = `${API_BASE_URL}/employee-register/`;
 const ATTENDANCE_API_URL = `${API_BASE_URL}/attendance/`;
 const attendanceStorageKey = "hrms-attendance-records";
@@ -46,20 +47,6 @@ const getCurrentTime = () =>
     hour12: false,
   });
 
-const readStoredAttendance = () => {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  try {
-    const storedRecords = window.localStorage.getItem(attendanceStorageKey);
-    return storedRecords ? JSON.parse(storedRecords) : {};
-  } catch (error) {
-    console.error("Attendance Storage Read Error:", error);
-    return {};
-  }
-};
-
 const getEmployeeIdFromAttendance = (attendance) => {
   if (typeof attendance.employee === "object" && attendance.employee !== null) {
     return attendance.employee.id;
@@ -68,14 +55,68 @@ const getEmployeeIdFromAttendance = (attendance) => {
   return attendance.employee;
 };
 
+const getCheckInTime = (attendance = {}) =>
+  attendance.checkInTime || attendance.check_in_time || null;
+
+const getCheckOutTime = (attendance = {}) =>
+  attendance.checkOutTime || attendance.check_out_time || null;
+
 const normalizeAttendanceRecord = (attendance) => ({
   id: attendance.id,
   employeeId: getEmployeeIdFromAttendance(attendance),
   date: attendance.date,
   status: attendance.status || "Pending",
-  checkInTime: attendance.check_in_time || null,
-  checkOutTime: attendance.check_out_time || null,
+  checkInTime: getCheckInTime(attendance),
+  checkOutTime: getCheckOutTime(attendance),
 });
+
+const readStoredAttendance = () => {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const storedRecords = window.localStorage.getItem(attendanceStorageKey);
+    const parsedRecords = storedRecords ? JSON.parse(storedRecords) : {};
+
+    return Object.fromEntries(
+      Object.entries(parsedRecords).map(([employeeId, record]) => [
+        employeeId,
+        {
+          ...record,
+          checkInTime: getCheckInTime(record),
+          checkOutTime: getCheckOutTime(record),
+        },
+      ]),
+    );
+  } catch (error) {
+    console.error("Attendance Storage Read Error:", error);
+    return {};
+  }
+};
+
+const formatAttendanceTime = (timeValue) => {
+  if (!timeValue) {
+    return "--";
+  }
+
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(timeValue)) {
+    return timeValue;
+  }
+
+  const parsedDate = new Date(timeValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return timeValue;
+  }
+
+  return parsedDate.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+};
 
 const getAttendanceBadgeClass = (status) => {
   if (status === "Present") {
@@ -570,7 +611,6 @@ function Home() {
                       <th>Date</th>
                       <th>Status</th>
                       <th>Check In</th>
-                      <th>Check Out</th>
                       <th className="text-center">Mark Attendance</th>
                     </tr>
                   </thead>
@@ -602,8 +642,12 @@ function Home() {
                               {record.status}
                             </span>
                           </td>
-                          <td>{record.checkInTime || "--"}</td>
-                          <td>{record.checkOutTime || "--"}</td>
+                          <td>
+                            {formatAttendanceTime(
+                              getCheckInTime(record) || employee.check_in_time,
+                            )}
+                          </td>
+
                           <td className="text-center">
                             <div className="d-flex flex-wrap justify-content-center gap-2">
                               {attendanceStatuses.map((status) => (
